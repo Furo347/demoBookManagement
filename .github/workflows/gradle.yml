@@ -47,6 +47,8 @@ jobs:
           check_name: Unit tests results
           files: |
             build/test-results/test/*.xml
+      - name: Run Integration Tests
+        run: ./gradlew testIntegration
       - name: Run Coverage
         run: ./gradlew jacocoFullReport
       - name: JaCoCo Code Coverage Report

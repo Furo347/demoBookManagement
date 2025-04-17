@@ -22,6 +22,10 @@ jacoco {
     toolVersion = "0.8.13"
 }
 
+val testIntegrationImplementation: Configuration by configurations.creating {
+    extendsFrom(configurations.implementation.get())
+}
+
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
@@ -48,6 +52,15 @@ dependencies {
     testImplementation("io.kotest.extensions:kotest-extensions-pitest:1.2.0")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.21")
+
+    testIntegrationImplementation("io.mockk:mockk:1.13.8")
+    testIntegrationImplementation("io.kotest:kotest-assertions-core:5.9.1")
+    testIntegrationImplementation("io.kotest:kotest-runner-junit5:5.9.1")
+    testIntegrationImplementation("com.ninja-squad:springmockk:4.0.2")
+    testIntegrationImplementation("io.kotest.extensions:kotest-extensions-spring:1.3.0")
+    testIntegrationImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(module = "mockito-core")
+    }
 }
 
 tasks.withType<KotlinCompile> {
@@ -62,7 +75,10 @@ tasks.withType<Test> {
 }
 
 tasks.register<JacocoReport>("jacocoFullReport") {
-    executionData(tasks.named("test").get(), tasks.named("testIntegration").get())
+    executionData(
+        tasks.named("test").get(),
+        tasks.named("testIntegration").get()
+    )
     sourceSets(sourceSets["main"])
 
     reports {
@@ -85,4 +101,42 @@ pitest {
     mainSourceSets.addAll(sourceSets["main"])
     outputFormats.addAll("XML", "HTML")
     excludedClasses.add("**BookManagementApplication")
+}
+testing {
+    suites {
+        val testIntegration by registering(JvmTestSuite::class) {
+            sources {
+                kotlin {
+                    setSrcDirs(listOf("src/testIntegration/kotlin"))
+                }
+                compileClasspath += sourceSets.main.get().output
+                runtimeClasspath += sourceSets.main.get().output
+                resources {
+                    setSrcDirs(listOf("src/testIntegration/resources"))
+                }
+            }
+            dependencies {
+                implementation(project())
+                implementation("io.mockk:mockk:1.13.8")
+                implementation("io.kotest:kotest-assertions-core:5.9.1")
+                implementation("io.kotest:kotest-runner-junit5:5.9.1")
+                implementation("com.ninja-squad:springmockk:4.0.2")
+                implementation("io.kotest.extensions:kotest-extensions-spring:1.3.0")
+                implementation("org.springframework.boot:spring-boot-starter-test") {
+                    exclude(module = "mockito-core")
+                }
+                implementation("org.springframework.boot:spring-boot-starter-validation")
+            }
+            targets {
+                all {
+                    testTask.configure {
+                        useJUnitPlatform()
+                    }
+                }
+            }
+        }
+    }
+}
+tasks.check {
+    dependsOn(testing.suites.named("testIntegration"))
 }
