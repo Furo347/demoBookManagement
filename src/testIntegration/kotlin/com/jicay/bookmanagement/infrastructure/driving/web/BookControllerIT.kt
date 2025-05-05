@@ -91,4 +91,28 @@ class BookControllerIT(
 
         verify(exactly = 0) { bookUseCase.addBook(any()) }
     }
+
+    test("rest route post reserve book") {
+        justRun { bookUseCase.reserveBook(any()) }
+
+        mockMvc.post("/books/reserve") {
+            // language=json
+            content = """
+                {
+                  "name": "Les misérables"
+                }
+            """.trimIndent()
+            contentType = APPLICATION_JSON
+            accept = APPLICATION_JSON
+        }.andExpect {
+            status { isCreated() }
+        }
+
+        val expected = Book(
+            name = "Les misérables",
+            author = ""
+        )
+
+        verify(exactly = 1) { bookUseCase.reserveBook(expected.name) }
+    }
 })

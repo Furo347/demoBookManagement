@@ -4,6 +4,7 @@ import com.jicay.bookmanagement.domain.model.Book
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.kotest.assertions.assertSoftly
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.extensions.spring.SpringExtension
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -70,6 +71,55 @@ class BookDAOIT(
                 this["title"].shouldBe("Les misérables")
                 this["author"].shouldBe("Victor Hugo")
             }
+        }
+
+        test("reserve book in db") {
+            // GIVEN
+            performQuery(
+                // language=sql
+                """
+                insert into book (title, author)
+                values 
+                    ('Les misérables', 'Victor Hugo');
+            """.trimIndent()
+            )
+
+            // WHEN
+            bookDAO.reserveBook("Les misérables")
+
+            // THEN
+            val res = performQuery(
+                // language=sql
+                "SELECT * from book"
+            )
+
+            res shouldHaveSize 1
+            assertSoftly(res.first()) {
+                this["id"].shouldNotBeNull().shouldBeInstanceOf<Int>()
+                this["title"].shouldBe("Les misérables")
+                this["author"].shouldBe("Victor Hugo")
+                this["reserved"].shouldBe(true)
+            }
+        }
+
+        test("reserve book in db should throw exception if book is not found") {
+            // GIVEN
+            performQuery(
+                // language=sql
+                """
+                insert into book (title, author)
+                values 
+                    ('Les misérables', 'Victor Hugo');
+            """.trimIndent()
+            )
+
+            // WHEN
+            val exception = shouldThrow<IllegalArgumentException> {
+                bookDAO.reserveBook("Unknown Book")
+            }
+
+            // THEN
+            exception.message shouldBe "Book not found"
         }
 
         afterSpec {

@@ -25,4 +25,11 @@ class BookDAO(private val namedParameterJdbcTemplate: NamedParameterJdbcTemplate
                 "author" to book.author
             ))
     }
+
+    override fun reserveBook(name: String) {
+        namedParameterJdbcTemplate
+            .update("UPDATE BOOK SET reserved = true WHERE title = :title", mapOf(
+                "title" to name
+            ))
+    }
 }

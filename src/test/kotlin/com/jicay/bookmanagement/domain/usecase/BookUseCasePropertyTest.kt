@@ -19,11 +19,19 @@ class InMemoryBookPort : BookPort {
         books.add(book)
     }
 
+    override fun reserveBook(name: String) {
+        val book = books.find { it.name == name }
+            ?: throw IllegalArgumentException("Book not found")
+        if (book.reserved) {
+            throw IllegalStateException("Book is already reserved")
+        }
+        books[books.indexOf(book)] = book.copy(reserved = true)
+    }
+
     fun clear() {
         books.clear()
     }
 }
-
 class BookUseCasePropertyTest : FunSpec({
 
     val bookPort = InMemoryBookPort()
